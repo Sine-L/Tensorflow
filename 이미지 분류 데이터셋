@@ -1,0 +1,45 @@
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import matplotlib.pyplot as plt
+# tensorflow와 keras 라이브러리 임포트, 시각화를 위한 matplotlib도 함께 임포트
+
+(train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
+# CIFAR-10 데이터셋을 불러오고, 훈련과 테스트 데이터셋으로 분리
+
+train_images, test_images = train_images / 255.0, test_images / 255.0
+# 이미지 데이터를 0과 1 사이로 정규화 (원래 픽셀 값은 0에서 255)
+
+model = models.Sequential()                                                                 # 모델을 순차적인 레이어의 스택으로 초기화
+model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))            # 32개의 필터를 가진 컨볼루션 레이어 추가, 각 필터의 크기는 3x3, 활성화 함수로 ReLU 사용, 입력 데이터 형태는 32x32 픽셀의 RGB 이미지
+model.add(layers.MaxPooling2D((2, 2)))                                                      # 2x2 풀링 사이즈를 가진 맥스 풀링 레이어 추가, 공간 크기를 줄임
+model.add(layers.Conv2D(64, (3, 3), activation='relu'))                                     # 64개의 필터를 가진 또 다른 컨볼루션 레이어 추가, 필터 크기는 3x3, 활성화 함수로 ReLU 사용
+model.add(layers.MaxPooling2D((2, 2)))                                                      # 또 다른 맥스 풀링 레이어 추가
+model.add(layers.Conv2D(64, (3, 3), activation='relu'))                                     # 64개의 필터를 가진 세 번째 컨볼루션 레이어 추가, 활성화 함수로 ReLU 사용
+model.add(layers.Flatten())                                                                 # 3차원 피쳐 맵을 1차원으로 평탄화
+model.add(layers.Dense(64, activation='relu'))                                              # 64개 유닛을 가진 완전 연결(밀집) 레이어 추가, 활성화 함수로 ReLU 사용
+model.add(layers.Dense(10))                                                                 # 10개 클래스에 해당하는 출력 유닛을 가진 완전 연결(밀집) 레이어 추가, 활성화 함수를 지정하지 않음
+
+
+model.compile(optimizer='adam',
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              metrics=['accuracy'])
+# 모델을 컴파일, 최적화기로 Adam 사용, 로짓을 직접 다루기 위해 SparseCategoricalCrossentropy 손실 함수 사용, 평가 지표로 정확도 사용
+
+history = model.fit(train_images, train_labels, epochs=10, 
+                    validation_data=(test_images, test_labels))
+# 모델 훈련, 훈련 데이터 사용, 에포크 수는 10, 검증 데이터로 테스트 데이터셋 사용
+
+plt.plot(history.history['accuracy'], label='accuracy')
+plt.plot(history.history['val_accuracy'], label='validation accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.ylim([0, 1])
+plt.legend(loc='lower right')
+# 훈련 정확도와 검증 정확도를 에포크 수에 따라 그래프로 표시
+
+test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
+print(test_acc)
+# 테스트 데이터셋에 대해 모델 성능 평가, 결과
+
+# 예측
+predictions = model.predict(test_images)
